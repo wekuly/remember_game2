@@ -16,5 +16,6 @@ export const LOBBY = {
 
 export const API = {
   /** 개발 시 서버 주소 (클라이언트에서 환경 변수/설정으로 오버라이드) */
-  SERVER_URL: "http://localhost:3000",
+  // SERVER_URL: "http://localhost:3000",
+  SERVER_URL: "http://158.180.90.78:3000",
 } as const;
