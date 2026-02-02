@@ -1,0 +1,530 @@
+/* 게임 방 UI */
+
+.game-wrap {
+  max-width: 480px;
+}
+
+.game-room {
+  margin-bottom: 1rem;
+  padding: 0.75rem 1rem;
+  background: linear-gradient(160deg, rgba(255, 255, 255, 0.08) 0%, rgba(255, 255, 255, 0.03) 100%);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 0.75rem;
+  box-shadow:
+    0 4px 24px rgba(0, 0, 0, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.06);
+}
+
+.game-room-players {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.game-room-vs {
+  flex-shrink: 0;
+  font-size: 0.75rem;
+  font-weight: 800;
+  color: rgba(255, 255, 255, 0.35);
+  letter-spacing: 0.1em;
+}
+
+.player-slot {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.5rem 0.6rem;
+  border-radius: 0.6rem;
+  border: 2px solid rgba(255, 255, 255, 0.08);
+  font-size: 0.95rem;
+  color: rgba(255, 255, 255, 0.9);
+  background: rgba(0, 0, 0, 0.15);
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.player-label {
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.45);
+  letter-spacing: 0.05em;
+}
+
+.player-info {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.player-slot .player-name {
+  font-size: 0.9rem;
+}
+
+.player-slot:first-of-type {
+  border-left: 3px solid rgba(255, 200, 100, 0.5);
+}
+
+.player-slot:last-of-type {
+  border-right: 3px solid rgba(255, 200, 100, 0.5);
+}
+
+.player-slot--me {
+  border-color: rgba(74, 158, 255, 0.35);
+  background: rgba(74, 158, 255, 0.08);
+  box-shadow: 0 0 0 1px rgba(74, 158, 255, 0.2);
+}
+
+.player-slot--me .player-name {
+  font-weight: 700;
+  color: #6eb3ff;
+}
+
+.player-badge {
+  font-size: 0.7rem;
+  padding: 0.2rem 0.5rem;
+  background: linear-gradient(135deg, rgba(74, 158, 255, 0.5) 0%, rgba(74, 158, 255, 0.25) 100%);
+  color: #fff;
+  border-radius: 0.35rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+/* 추후 턴일 때: 빨간 테두리 깜빡임 */
+.player-slot--turn {
+  border-color: #e85d5d !important;
+  box-shadow: 0 0 12px rgba(232, 93, 93, 0.4);
+  animation: turn-blink 0.8s ease-in-out infinite;
+}
+
+@keyframes turn-blink {
+  50% {
+    border-color: rgba(232, 93, 93, 0.5) !important;
+    box-shadow: 0 0 8px rgba(232, 93, 93, 0.25);
+  }
+}
+
+/* 플레이어별 토큰: 레디 전에는 숨김, 게임 시작 후 표시. 11개 초과 시 두 줄 */
+.player-tokens {
+  display: none;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.25rem;
+  margin-top: 0.35rem;
+  max-width: 11rem;
+}
+
+.game-room--playing .player-tokens {
+  display: flex;
+}
+
+.player-token {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.player-token--p1 {
+  background: linear-gradient(145deg, #6eb3ff 0%, #4a9eff 100%);
+  box-shadow: 0 0 0 1px rgba(74, 158, 255, 0.5);
+}
+
+.player-token--p2 {
+  background: linear-gradient(145deg, #ff9a6e 0%, #e85d5d 100%);
+  box-shadow: 0 0 0 1px rgba(232, 93, 93, 0.5);
+}
+
+/* 닉네임 밑 토큰을 접시로 놓을 때 제거 애니메이션 */
+.player-token.game-token--removing {
+  animation: token-remove 0.3s ease-out forwards;
+}
+
+@keyframes token-remove {
+  to {
+    opacity: 0;
+    transform: scale(0);
+  }
+}
+
+.game-area {
+  position: relative;
+  min-height: 200px;
+  padding: 1rem;
+  padding-top: 2rem;
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 0.5rem;
+  border: 1px dashed rgba(255, 255, 255, 0.15);
+  margin-bottom: 1.5rem;
+}
+
+/* game-area 왼쪽/오른쪽 위: 토큰 x N개 (N = n(n-1)/2), 레디 후에만 표시 */
+.game-area-token-label {
+  display: none;
+  position: absolute;
+  top: 0.5rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.game-area--playing .game-area-token-label {
+  display: block;
+}
+
+/* 메인 게임 시작 시 '토큰 x N개' 표시 제거 (더 이상 사용 안 함) */
+.game-area--main-phase .game-area-token-label {
+  display: none;
+}
+
+.game-area-token-label--p1 {
+  left: 1rem;
+  color: #6eb3ff;
+  text-shadow: 0 0 4px rgba(74, 158, 255, 0.4);
+}
+
+.game-area-token-label--p2 {
+  right: 1rem;
+  color: #ff9a6e;
+  text-shadow: 0 0 4px rgba(232, 93, 93, 0.4);
+}
+
+.game-phase-label {
+  margin: 0 0 0.75rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.6);
+  text-align: center;
+}
+
+.game-phase-label--playing {
+  color: #6eb3ff;
+}
+
+.game-phase-label--waiting {
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 0.95rem;
+}
+
+.game-ready-btn {
+  display: block;
+  margin: 0 auto;
+  padding: 0.6rem 1.5rem;
+  font-size: 1rem;
+  font-weight: 600;
+  color: #fff;
+  background: linear-gradient(135deg, #4a9eff 0%, #357abd 100%);
+  border: none;
+  border-radius: 0.5rem;
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+
+.game-ready-btn:hover {
+  opacity: 0.95;
+}
+
+.game-ready-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* 접시 원형 배치: 10~20개, 2단위 (PLATE_COUNT) */
+.game-plate-ring {
+  --plate-ring-size: 400px;
+  --plate-radius: 160px;
+  --plate-size: 45px;
+  /** 뚜껑은 접시 바깥쪽에 배치 (접시 반경 + 접시 크기만큼 밖으로) */
+  --lid-radius: calc(var(--plate-radius) + var(--plate-size));
+  position: relative;
+  width: var(--plate-ring-size);
+  height: var(--plate-ring-size);
+  margin: 0 auto;
+}
+
+/* 뚜껑: 기본 숨김, 클릭 시 .game-plate-lid--covered 추가하면 보이면서 덮히는 애니메이션 */
+.game-plate-ring .game-plate-lid {
+  visibility: hidden;
+  opacity: 0;
+}
+
+.game-plate-ring .game-plate-lid.game-plate-lid--covered {
+  visibility: visible;
+  opacity: 1;
+  animation: lid-cover 2s ease-out forwards;
+}
+
+/* 벗길 때는 lid-cover 대신 lid-uncover만 재생 */
+.game-plate-ring .game-plate-lid.game-plate-lid--covered.game-plate-lid--uncover {
+  animation: lid-uncover 1.2s ease-in-out forwards;
+}
+
+@keyframes lid-cover {
+  from {
+    transform: rotate(var(--plate-angle)) translateY(calc(-1 * var(--lid-radius))) rotate(calc(-1 * var(--plate-angle)));
+    opacity: 0;
+  }
+
+  to {
+    transform: rotate(var(--plate-angle)) translateY(calc(-1 * var(--plate-radius))) rotate(calc(-1 * var(--plate-angle)));
+    opacity: 1;
+  }
+}
+
+.game-plate {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: var(--plate-size);
+  height: var(--plate-size);
+  margin-left: calc(var(--plate-size) / -2);
+  margin-top: calc(var(--plate-size) / -2);
+  border-radius: 50%;
+  background: linear-gradient(145deg, rgba(255, 255, 255, 0.95) 0%, rgba(240, 240, 240, 0.9) 100%);
+  border: 2.5px solid rgba(255, 255, 255, 0.8);
+  border-color: #a08060;
+  box-shadow:
+    inset 0 2px 6px rgba(255, 255, 255, 0.15),
+    inset 0 -2px 4px rgba(0, 0, 0, 0.4),
+    0 0 0 2px rgba(139, 115, 85, 0.6),
+    0 4px 12px rgba(0, 0, 0, 0.5);
+  transform: rotate(var(--plate-angle)) translateY(calc(-1 * var(--plate-radius))) rotate(calc(-1 * var(--plate-angle)));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: filter 0.15s, transform 0.15s;
+  z-index: 1;
+}
+
+.game-plate:hover {
+  filter: brightness(1.08);
+}
+
+.game-plate:active {
+  filter: brightness(0.95);
+}
+
+/* 한 번 클릭한 접시: 다시 클릭 불가 */
+.game-plate.game-plate--used {
+  pointer-events: none;
+  cursor: default;
+  opacity: 0.65;
+}
+
+/* 메인 단계: 토큰 놓을 접시로 선택된 두 접시만 클릭 가능 */
+.game-plate.game-plate--used.game-plate--placeable {
+  pointer-events: auto;
+  cursor: pointer;
+  opacity: 1;
+}
+
+/* 접시 번호: 12시 방향부터 시계방향 1, 2, … (노란 글자, 접시 바깥쪽에 배치) */
+.game-plate-number {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: #e6c200;
+  text-shadow: 0 0 2px rgba(0, 0, 0, 0.8), 0 1px 2px rgba(0, 0, 0, 0.6);
+  line-height: 1;
+  pointer-events: none;
+  user-select: none;
+  /* 접시 중심에서 바깥(원 밖)으로 밀어서 배치 (뚜껑과 겹쳐도 됨) */
+  transform: translateY(calc(var(--plate-size) / 2 + 10px));
+}
+
+/* 접시 위 토큰: 갯수만큼 작은 원, 확장성 위해 --plate-size 기준. 뚜껑이 덮이면 z-index로 가려짐 */
+.game-plate-tokens {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-content: center;
+  gap: calc(var(--plate-size) * 0.08);
+  max-width: calc(var(--plate-size) * 0.85);
+  max-height: calc(var(--plate-size) * 0.85);
+  pointer-events: none;
+}
+
+.game-plate-token {
+  --token-size: calc(var(--plate-size) * 0.18);
+  width: var(--token-size);
+  height: var(--token-size);
+  min-width: 4px;
+  min-height: 4px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.game-plate-token--p1 {
+  background: linear-gradient(145deg, #6eb3ff 0%, #4a9eff 100%);
+  box-shadow:
+    inset 0 1px 1px rgba(255, 255, 255, 0.4),
+    0 0 0 1px rgba(74, 158, 255, 0.5);
+}
+
+.game-plate-token--p2 {
+  background: linear-gradient(145deg, #ff9a6e 0%, #e85d5d 100%);
+  box-shadow:
+    inset 0 1px 1px rgba(255, 255, 255, 0.4),
+    0 0 0 1px rgba(232, 93, 93, 0.5);
+}
+
+/* 뚜껑: 접시와 같은 크기, 접시 바깥쪽에서 시작 → 덮힐 때 접시 위치로 이동. z-index로 접시·토큰 위에 그려져 덮이면 토큰 안 보임 */
+.game-plate-lid {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: var(--plate-size);
+  height: var(--plate-size);
+  margin-left: calc(var(--plate-size) / -2);
+  margin-top: calc(var(--plate-size) / -2);
+  border-radius: 50%;
+  background: linear-gradient(160deg, #8b7355 0%, #6b5344 40%, #5c4a3a 100%);
+  border: 2.5px solid #7a6348;
+  box-shadow:
+    inset 0 2px 4px rgba(255, 255, 255, 0.12),
+    inset 0 -2px 6px rgba(0, 0, 0, 0.5),
+    0 0 0 2px rgba(60, 45, 35, 0.8),
+    0 4px 10px rgba(0, 0, 0, 0.5);
+  transform: rotate(var(--plate-angle)) translateY(calc(-1 * var(--lid-radius))) rotate(calc(-1 * var(--plate-angle)));
+  pointer-events: none;
+  z-index: 2;
+}
+
+/* 메인 단계: 선수가 확인할 두 접시 선택 시 뚜껑 클릭 가능 */
+.game-area--main-phase .game-plate-lid {
+  pointer-events: auto;
+  cursor: pointer;
+}
+
+.game-area--main-phase .game-plate-lid:hover {
+  filter: brightness(1.1);
+}
+
+/* 메인 단계에서 선택한 뚜껑(포커스) */
+.game-plate-lid.game-plate-lid--selected {
+  box-shadow:
+    inset 0 2px 4px rgba(255, 255, 255, 0.12),
+    inset 0 -2px 6px rgba(0, 0, 0, 0.5),
+    0 0 0 2px rgba(60, 45, 35, 0.8),
+    0 0 0 4px rgba(230, 194, 0, 0.8),
+    0 4px 10px rgba(0, 0, 0, 0.5);
+}
+
+/* 두 뚜껑 선택 후: 원래 자리(위)로 올라가며 사라지는 애니메이션 (--covered와 함께 있을 때는 위 규칙에서 적용) */
+.game-plate-lid.game-plate-lid--uncover {
+  animation: lid-uncover 1.2s ease-in-out forwards;
+}
+
+@keyframes lid-uncover {
+  from {
+    transform: rotate(var(--plate-angle)) translateY(calc(-1 * var(--plate-radius))) rotate(calc(-1 * var(--plate-angle)));
+    opacity: 1;
+    visibility: visible;
+  }
+  to {
+    transform: rotate(var(--plate-angle)) translateY(calc(-1 * var(--lid-radius))) rotate(calc(-1 * var(--plate-angle)));
+    opacity: 0;
+    visibility: hidden;
+  }
+}
+
+.game-center-zone {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  min-width: 120px;
+  max-width: 200px;
+  text-align: center;
+}
+
+.game-timer {
+  font-size: 1.25rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.game-timer--hidden {
+  visibility: hidden;
+}
+
+.game-center-message {
+  min-height: 2.5rem;
+  width: 200px;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.95rem;
+  color: #e6c200;
+  text-align: center;
+  background: rgba(230, 194, 0, 0.08);
+  border-radius: 0.5rem;
+  border: 1px solid rgba(230, 194, 0, 0.25);
+}
+
+.game-center-message .game-center-highlight {
+  color: #ff4444;
+  font-size: 1.15em;
+  font-weight: 700;
+}
+
+.game-main-content {
+  min-height: 80px;
+  width: 100%;
+}
+
+.game-wrap .lobby-actions {
+  margin-top: 0;
+}
+
+.game-wrap .lobby-actions a {
+  display: block;
+  text-align: center;
+  padding: 0.75rem;
+  color: #4a9eff;
+  text-decoration: none;
+  border: 1px solid rgba(74, 158, 255, 0.4);
+  border-radius: 0.5rem;
+}
+
+.game-wrap .lobby-actions a:hover {
+  background: rgba(74, 158, 255, 0.15);
+}
+
+/* 게임 중 '본인 차례가 아닐 때' 클릭 시 공지 */
+.game-notice {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 1000;
+  padding: 1rem 1.5rem;
+  font-size: 0.95rem;
+  color: rgba(255, 255, 255, 0.95);
+  background: rgba(0, 0, 0, 0.85);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 0.75rem;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+  pointer-events: none;
+  animation: game-notice-in 0.2s ease-out;
+}
+
+@keyframes game-notice-in {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+}
