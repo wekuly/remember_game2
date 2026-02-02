@@ -270,7 +270,7 @@ io.on("connection", (socket) => {
   });
 });
 
-server.listen(PORT, () => {
+server.listen(PORT, '0.0.0.0', () => {
   console.log(`서버: http://localhost:${PORT}`);
   console.log(`Socket.IO: http://localhost:${PORT} (로그인 → 로비 → 게임)`);
 });

@@ -9,7 +9,12 @@
     "build:server": "tsc -p tsconfig.server.json",
     "start": "node dist/index.js",
     "server": "node dist-server/server.js",
-    "dev": "nodemon"
+    "dev": "nodemon",
+    "pm2:start": "pm2 start ecosystem.config.cjs",
+    "pm2:stop": "pm2 stop remember_game2",
+    "pm2:restart": "pm2 restart remember_game2",
+    "pm2:logs": "pm2 logs remember_game2",
+    "pm2:status": "pm2 status remember_game2"
   },
   "keywords": [],
   "author": "",
