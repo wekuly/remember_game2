@@ -17,7 +17,8 @@ interface SocketLike {
   off(event: string, fn?: (data: unknown) => void): void;
 }
 
-const API_BASE = window.location.origin;
+/** API·Socket 연결 서버 (배포: 168.107.50.13:3000, 로컬: http://localhost:3000) */
+const API_BASE = "http://168.107.50.13:3000";
 const STORAGE_KEY_USER = "remember_game2_user";
 const STORAGE_KEY_ROOM = "remember_game2_room";
 const ROOM_LIST_INTERVAL_MS = 3000;
@@ -475,9 +476,9 @@ function renderGame(): void {
   let transitionToMainDone = false;
   const isHost = roomState.playerIndex === 0;
 
-  /** WebSocket: 방 입장 및 게임 시작 수신 */
+  /** WebSocket: 방 입장 및 게임 시작 수신 (API_BASE와 동일 서버) */
   if (!gameSocket) {
-    gameSocket = getIo()(window.location.origin, { path: "/socket.io", transports: ["websocket", "polling"] });
+    gameSocket = getIo()(API_BASE, { path: "/socket.io", transports: ["websocket", "polling"] });
   }
   gameSocket.emit("game:joinRoom", { roomId: roomState.roomId, playerIndex: roomState.playerIndex });
 

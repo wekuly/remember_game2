@@ -3,7 +3,9 @@
     "target": "ES2022",
     "module": "CommonJS",
     "moduleResolution": "Node",
-    "lib": ["ES2022"],
+    "lib": [
+      "ES2022"
+    ],
     "outDir": "dist-server",
     "rootDir": "server",
     "strict": true,
@@ -16,6 +18,11 @@
     "sourceMap": true,
     "noUncheckedIndexedAccess": true
   },
-  "include": ["server/**/*.ts"],
-  "exclude": ["node_modules", "dist-server"]
+  "include": [
+    "server/server.ts"
+  ],
+  "exclude": [
+    "node_modules",
+    "dist-server"
+  ]
 }
