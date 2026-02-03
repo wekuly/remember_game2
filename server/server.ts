@@ -24,6 +24,25 @@ interface ServerUser {
   socketId: string;
 }
 const sessions = new Map<string, ServerUser>();
+
+/** socketId → nickname (로그 표시용) */
+const socketNicknames = new Map<string, string>();
+
+function getSocketLabel(socketId: string): string {
+  const nick = socketNicknames.get(socketId);
+  return (nick ?? "").trim() || socketId;
+}
+
+function setSocketNickname(socketId: string, nickname: string): void {
+  const n = String(nickname ?? "").trim();
+  if (!n) return;
+  socketNicknames.set(socketId, n);
+}
+
+function clearSocketNickname(socketId: string): void {
+  socketNicknames.delete(socketId);
+}
+
 function guestLogin(socketId: string, name?: string): ServerUser {
   const user: ServerUser = {
     id: socketId,
@@ -31,6 +50,7 @@ function guestLogin(socketId: string, name?: string): ServerUser {
     socketId,
   };
   sessions.set(socketId, user);
+  setSocketNickname(socketId, user.name);
   return user;
 }
 function getUser(socketId: string): ServerUser | null {
@@ -38,6 +58,7 @@ function getUser(socketId: string): ServerUser | null {
 }
 function logout(socketId: string): void {
   sessions.delete(socketId);
+  clearSocketNickname(socketId);
 }
 
 // ----- 인라인: store (방·전적) -----
@@ -452,13 +473,14 @@ app.get("/api/games/log", (req, res) => {
 
 // ----- Socket.IO -----
 io.on("connection", (socket) => {
-  console.log(`[연결] ${socket.id} (${socket.handshake.address})`);
+  console.log(`[연결] ${getSocketLabel(socket.id)} (${socket.handshake.address})`);
 
   socket.on("login", (data: { name?: string }) => {
     const name = data && typeof data.name === "string" ? data.name.trim() : "";
     const user = guestLogin(socket.id, name || undefined);
     socket.emit("login", { ok: true, user });
-    console.log(`[로그인] ${socket.id} → ${user.name}`);
+    setSocketNickname(socket.id, user.name);
+    console.log(`[로그인] ${getSocketLabel(socket.id)}`);
   });
 
   socket.on("lobby:join", () => {
@@ -473,7 +495,7 @@ io.on("connection", (socket) => {
 
   socket.on("lobby:leave", () => {
     leaveQueue(socket.id);
-    console.log(`[Socket] ${socket.id} lobby:leave`);
+    console.log(`[Socket] ${getSocketLabel(socket.id)} lobby:leave`);
   });
 
   socket.on("game:joinRoom", (data: { roomId?: string; playerIndex?: number; playerName?: string }) => {
@@ -483,13 +505,14 @@ io.on("connection", (socket) => {
     const room = getRoomById(roomId);
     if (!room) return;
     const playerName = typeof data?.playerName === "string" ? data.playerName.trim() : "";
+    if (playerName) setSocketNickname(socket.id, playerName);
     if (playerName && room) {
       if (playerIndex === 0 && room.player1) room.player1.name = playerName;
       else if (playerIndex === 1 && room.player2) room.player2.name = playerName;
     }
     socket.join(roomId);
     socketGameRooms.set(socket.id, { roomId, playerIndex });
-    console.log(`[Socket] ${socket.id} game:joinRoom roomId=${roomId} playerIndex=${playerIndex}`);
+    console.log(`[Socket] ${getSocketLabel(socket.id)} game:joinRoom roomId=${roomId} playerIndex=${playerIndex}`);
   });
 
   socket.on("game:start", (data: { roomId?: string }) => {
@@ -514,7 +537,7 @@ io.on("connection", (socket) => {
     const info = socketGameRooms.get(socket.id);
     if (!info || info.roomId !== roomId || info.playerIndex !== playerIndex) return;
     io.to(roomId).emit("game:plateClick", { roomId, playerIndex, plateIndex, round });
-    console.log(`[Socket] ${socket.id} game:plateClick roomId=${roomId} plate=${plateIndex}`);
+    console.log(`[Socket] ${getSocketLabel(socket.id)} game:plateClick roomId=${roomId} plate=${plateIndex}`);
   });
 
   socket.on("game:mainTwoPlatesSelected", (data: { roomId?: string; playerIndex?: number; plateA?: number; plateB?: number; correct?: boolean }) => {
@@ -543,7 +566,7 @@ io.on("connection", (socket) => {
     const info = socketGameRooms.get(socket.id);
     if (!info || info.roomId !== roomId || info.playerIndex !== playerIndex) return;
     io.to(roomId).emit("game:mainTokenPlaced", { roomId, playerIndex, plateIndex, countP1, countP2 });
-    console.log(`[Socket] ${socket.id} game:mainTokenPlaced roomId=${roomId} plate=${plateIndex}`);
+    console.log(`[Socket] ${getSocketLabel(socket.id)} game:mainTokenPlaced roomId=${roomId} plate=${plateIndex}`);
   });
 
   socket.on("game:mainWrongAnswerDone", (data: { roomId?: string; playerIndex?: number }) => {
@@ -553,7 +576,7 @@ io.on("connection", (socket) => {
     const info = socketGameRooms.get(socket.id);
     if (!info || info.roomId !== roomId || info.playerIndex !== playerIndex) return;
     io.to(roomId).emit("game:mainWrongAnswerDone", { roomId, playerIndex });
-    console.log(`[Socket] ${socket.id} game:mainWrongAnswerDone roomId=${roomId}`);
+    console.log(`[Socket] ${getSocketLabel(socket.id)} game:mainWrongAnswerDone roomId=${roomId}`);
   });
 
   socket.on("game:gameOver", (data: { roomId?: string; playerIndex?: number; reason?: string; winnerPlayerIndex?: number; loserPlayerIndex?: number }) => {
@@ -616,7 +639,7 @@ io.on("connection", (socket) => {
     }
     leaveRoom(roomId, 0);
     leaveRoom(roomId, 1);
-    console.log(`[Socket] ${socket.id} game:gameEndFinalize roomId=${roomId}`);
+    console.log(`[Socket] ${getSocketLabel(socket.id)} game:gameEndFinalize roomId=${roomId}`);
   });
 
   socket.on("game:mainTimeOver", (data: { roomId?: string; playerIndex?: number }) => {
@@ -626,7 +649,7 @@ io.on("connection", (socket) => {
     const info = socketGameRooms.get(socket.id);
     if (!info || info.roomId !== roomId || info.playerIndex !== playerIndex) return;
     io.to(roomId).emit("game:mainTimeOver", { roomId, playerIndex });
-    console.log(`[Socket] ${socket.id} game:mainTimeOver roomId=${roomId}`);
+    console.log(`[Socket] ${getSocketLabel(socket.id)} game:mainTimeOver roomId=${roomId}`);
   });
 
   socket.on("game:roundDone", (data: { roomId?: string; playerIndex?: number }) => {
@@ -640,7 +663,7 @@ io.on("connection", (socket) => {
     const nextTurn: 0 | 1 = room.currentTurn === 0 ? 1 : 0;
     setCurrentTurn(roomId, nextTurn);
     io.to(roomId).emit("game:turnSwitch", { roomId, currentTurn: nextTurn });
-    console.log(`[Socket] ${socket.id} game:roundDone roomId=${roomId} nextTurn=${nextTurn}`);
+    console.log(`[Socket] ${getSocketLabel(socket.id)} game:roundDone roomId=${roomId} nextTurn=${nextTurn}`);
   });
 
   socket.on("room:leave", (data: { roomId?: string; playerIndex?: number }) => {
@@ -653,10 +676,11 @@ io.on("connection", (socket) => {
     leaveRoom(roomId, playerIndex as 0 | 1);
     socket.leave(roomId);
     socketGameRooms.delete(socket.id);
-    console.log(`[Socket] ${socket.id} room:leave roomId=${roomId}`);
+    console.log(`[Socket] ${getSocketLabel(socket.id)} room:leave roomId=${roomId}`);
   });
 
   socket.on("disconnect", (reason) => {
+    const label = getSocketLabel(socket.id);
     const info = socketGameRooms.get(socket.id);
     if (info) {
       io.to(info.roomId).emit("room:playerLeft", { roomId: info.roomId, playerIndex: info.playerIndex });
@@ -666,7 +690,7 @@ io.on("connection", (socket) => {
     }
     leaveQueue(socket.id);
     logout(socket.id);
-    console.log(`[연결 해제] ${socket.id} (${reason})`);
+    console.log(`[연결 해제] ${label} (${reason})`);
   });
 
   socket.on("error", (err: Error) => {
