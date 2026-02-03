@@ -17,7 +17,8 @@ interface SocketLike {
   off(event: string, fn?: (data: unknown) => void): void;
 }
 
-/** API·Socket 연결 서버 (배포: 168.107.50.13:3000, 로컬: http://localhost:3000) */
+/** API·Socket 연결 서버. 무조건 아래 주소 사용 (배포 서버) */
+// 로컬/동일 출처 사용 시: const API_BASE = window.location.origin;
 const API_BASE = "http://168.107.50.13:3000";
 const STORAGE_KEY_USER = "remember_game2_user";
 const STORAGE_KEY_ROOM = "remember_game2_room";
@@ -25,9 +26,9 @@ const ROOM_LIST_INTERVAL_MS = 3000;
 const ROOM_POLL_INTERVAL_MS = 2000;
 
 /** 토큰 놓기(round) 단계 타이머(초) */
-const TIMER_DEFAULT_SECONDS = 5;
+const TIMER_DEFAULT_SECONDS = 30;
 /** 확인할 두 접시 선택(메인 게임) 단계 타이머(초) */
-const MAIN_GAME_TIMER_SECONDS = 30;
+const MAIN_GAME_TIMER_SECONDS = 60;
 /** 게임 중앙 설명 문구, 개발자 조정용 */
 const GAME_CENTER_MESSAGE = "";
 /** 접시 개수 기본값 (방 정보 없을 때) */
@@ -132,10 +133,11 @@ async function fetchJoinableRooms(): Promise<ApiRoom[]> {
 }
 
 async function createRoom(plateCount: number): Promise<{ roomId: string; plateCount: number }> {
+  const creatorName = getPlayerName();
   const res = await fetch(`${API_BASE}/api/rooms`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ plateCount }),
+    body: JSON.stringify({ plateCount, creatorName }),
   });
   const data = (await res.json()) as {
     ok?: boolean;
@@ -480,7 +482,11 @@ function renderGame(): void {
   if (!gameSocket) {
     gameSocket = getIo()(API_BASE, { path: "/socket.io", transports: ["websocket", "polling"] });
   }
-  gameSocket.emit("game:joinRoom", { roomId: roomState.roomId, playerIndex: roomState.playerIndex });
+  gameSocket.emit("game:joinRoom", {
+    roomId: roomState.roomId,
+    playerIndex: roomState.playerIndex,
+    playerName: getPlayerName(),
+  });
 
   const onGameStart = (data: unknown) => {
     const payload = data as { roomId?: string };

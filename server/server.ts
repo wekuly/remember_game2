@@ -226,6 +226,21 @@ function getGameResults(limit = 50): GameResultRecord[] {
   return gameResults.slice(0, Math.max(0, limit));
 }
 
+// ----- 게임 로그 (시간 + 핵심 이벤트만) -----
+interface GameLogEntry {
+  at: string;
+  msg: string;
+}
+const gameLog: GameLogEntry[] = [];
+const GAME_LOG_MAX = 500;
+
+function gameLogWrite(msg: string): void {
+  const at = new Date().toISOString();
+  gameLog.push({ at, msg });
+  if (gameLog.length > GAME_LOG_MAX) gameLog.shift();
+  console.log(`[LOG] ${at} ${msg}`);
+}
+
 // ----- 인라인: lobby (매칭 큐만 유지, 방 생성 없음 - REST 방 사용) -----
 const lobbyQueue: string[] = [];
 function joinQueue(_io: unknown, socketId: string, _user: ServerUser): void {
@@ -249,6 +264,27 @@ const io = new Server(httpServer, { cors: { origin: "*" } });
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+// CORS: 다른 출처(포트/도메인)에서 API·Socket 접근 허용
+app.use((_req, res, next) => {
+  res.setHeader("Access-Control-Allow-Origin", "*");
+  res.setHeader("Access-Control-Allow-Methods", "GET, POST, PUT, PATCH, DELETE, OPTIONS");
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
+  if (_req.method === "OPTIONS") {
+    res.status(204).end();
+    return;
+  }
+  next();
+});
+
+// 요청/응답 확인용 로그 (간단히)
+app.use((req, _res, next) => {
+  const start = Date.now();
+  _res.on("finish", () => {
+    // console.log(`[HTTP] ${req.method} ${req.path} → ${_res.statusCode} (${Date.now() - start}ms)`);
+  });
+  next();
+});
+
 // 정적 파일: server.js 단일 배포 시 폴더가 없을 수 있으므로 존재할 때만 마운트
 const publicDir = path.join(projectRoot, "public");
 const clientDir = path.join(projectRoot, "dist", "client");
@@ -269,8 +305,15 @@ app.get("/api/rooms", (_req, res) => {
 });
 
 app.post("/api/rooms", (req, res) => {
-  const plateCount = (req.body as { plateCount?: number })?.plateCount;
+  const body = req.body as { plateCount?: number; creatorName?: string };
+  const plateCount = body?.plateCount;
+  const creatorName = typeof body?.creatorName === "string" ? body.creatorName.trim() : "";
   const { roomId, code, room } = createRoom(plateCount);
+  if (creatorName) {
+    gameLogWrite(`${creatorName} 방 만들었다 (code=${code})`);
+  } else {
+    gameLogWrite(`방 생성 (code=${code})`);
+  }
   res.status(201).json({
     ok: true,
     roomId,
@@ -314,6 +357,10 @@ app.post("/api/rooms/join", (req, res) => {
   if (!result.ok) {
     return res.status(400).json({ ok: false, error: result.error });
   }
+  const name = (playerName ?? "").trim() || "플레이어";
+  const nth = result.playerIndex === 0 ? "1번" : "2번";
+  const codeStr = result.room?.code ?? code ?? "";
+  gameLogWrite(`${name} 방 들어갔다 (${nth}, code=${codeStr})`);
   res.json({
     ok: true,
     roomId: result.room?.id,
@@ -349,6 +396,11 @@ app.post("/api/rooms/:roomId/join", (req, res) => {
   if (!result.ok) {
     return res.status(400).json({ ok: false, error: result.error });
   }
+  const name = (playerName ?? "").trim() || "플레이어";
+  const room = getRoomById(roomId);
+  const code = room?.code ?? roomId;
+  const nth = result.playerIndex === 0 ? "1번" : "2번";
+  gameLogWrite(`${name} 방 들어갔다 (${nth}, code=${code})`);
   res.json({ ok: true, playerIndex: result.playerIndex, room: result.room });
 });
 
@@ -391,6 +443,13 @@ app.get("/api/games/result", (req, res) => {
   res.json({ ok: true, results, count: results.length });
 });
 
+/** 게임 로그 조회 (최신순, ?limit=100) */
+app.get("/api/games/log", (req, res) => {
+  const limit = Math.min(200, Math.max(1, parseInt(String(req.query.limit), 10) || 50));
+  const logs = gameLog.slice(-limit).reverse();
+  res.json({ ok: true, logs, count: logs.length });
+});
+
 // ----- Socket.IO -----
 io.on("connection", (socket) => {
   console.log(`[연결] ${socket.id} (${socket.handshake.address})`);
@@ -409,21 +468,28 @@ io.on("connection", (socket) => {
       socket.emit("login", { ok: true, user });
     }
     joinQueue(io, socket.id, user);
-    console.log(`[로비] ${socket.id} 매칭 대기 중`);
+    // console.log(`[로비] ${user.name} 매칭 대기 중`);
   });
 
   socket.on("lobby:leave", () => {
     leaveQueue(socket.id);
+    console.log(`[Socket] ${socket.id} lobby:leave`);
   });
 
-  socket.on("game:joinRoom", (data: { roomId?: string; playerIndex?: number }) => {
+  socket.on("game:joinRoom", (data: { roomId?: string; playerIndex?: number; playerName?: string }) => {
     const roomId = typeof data?.roomId === "string" ? data.roomId.trim() : "";
     const playerIndex = data?.playerIndex === 0 || data?.playerIndex === 1 ? data.playerIndex : -1;
     if (!roomId || playerIndex < 0) return;
     const room = getRoomById(roomId);
     if (!room) return;
+    const playerName = typeof data?.playerName === "string" ? data.playerName.trim() : "";
+    if (playerName && room) {
+      if (playerIndex === 0 && room.player1) room.player1.name = playerName;
+      else if (playerIndex === 1 && room.player2) room.player2.name = playerName;
+    }
     socket.join(roomId);
     socketGameRooms.set(socket.id, { roomId, playerIndex });
+    console.log(`[Socket] ${socket.id} game:joinRoom roomId=${roomId} playerIndex=${playerIndex}`);
   });
 
   socket.on("game:start", (data: { roomId?: string }) => {
@@ -434,6 +500,9 @@ io.on("connection", (socket) => {
     const room = getRoomById(roomId);
     if (!room || !room.player1 || !room.player2) return;
     io.to(roomId).emit("game:start", { roomId });
+    const p1 = room.player1?.name ?? "1P";
+    const p2 = room.player2?.name ?? "2P";
+    gameLogWrite(`게임 시작 (${p1} vs ${p2}, code=${room.code})`);
   });
 
   socket.on("game:plateClick", (data: { roomId?: string; playerIndex?: number; plateIndex?: number; round?: number }) => {
@@ -445,6 +514,7 @@ io.on("connection", (socket) => {
     const info = socketGameRooms.get(socket.id);
     if (!info || info.roomId !== roomId || info.playerIndex !== playerIndex) return;
     io.to(roomId).emit("game:plateClick", { roomId, playerIndex, plateIndex, round });
+    console.log(`[Socket] ${socket.id} game:plateClick roomId=${roomId} plate=${plateIndex}`);
   });
 
   socket.on("game:mainTwoPlatesSelected", (data: { roomId?: string; playerIndex?: number; plateA?: number; plateB?: number; correct?: boolean }) => {
@@ -456,6 +526,11 @@ io.on("connection", (socket) => {
     const info = socketGameRooms.get(socket.id);
     if (!info || info.roomId !== roomId || info.playerIndex !== playerIndex) return;
     io.to(roomId).emit("game:mainTwoPlatesSelected", { roomId, playerIndex, plateA, plateB, correct: data?.correct === true });
+    const room = getRoomById(roomId);
+    const who = room && playerIndex === 0 ? room.player1?.name : room?.player2?.name;
+    const name = (who ?? "").trim() || (playerIndex === 0 ? "1P" : "2P");
+    const result = data?.correct === true ? "맞췄다" : "틀렸다";
+    gameLogWrite(`${name} 접시 ${plateA + 1},${plateB + 1} 골랐다 → ${result}`);
   });
 
   socket.on("game:mainTokenPlaced", (data: { roomId?: string; playerIndex?: number; plateIndex?: number; countP1?: number; countP2?: number }) => {
@@ -468,6 +543,7 @@ io.on("connection", (socket) => {
     const info = socketGameRooms.get(socket.id);
     if (!info || info.roomId !== roomId || info.playerIndex !== playerIndex) return;
     io.to(roomId).emit("game:mainTokenPlaced", { roomId, playerIndex, plateIndex, countP1, countP2 });
+    console.log(`[Socket] ${socket.id} game:mainTokenPlaced roomId=${roomId} plate=${plateIndex}`);
   });
 
   socket.on("game:mainWrongAnswerDone", (data: { roomId?: string; playerIndex?: number }) => {
@@ -477,6 +553,7 @@ io.on("connection", (socket) => {
     const info = socketGameRooms.get(socket.id);
     if (!info || info.roomId !== roomId || info.playerIndex !== playerIndex) return;
     io.to(roomId).emit("game:mainWrongAnswerDone", { roomId, playerIndex });
+    console.log(`[Socket] ${socket.id} game:mainWrongAnswerDone roomId=${roomId}`);
   });
 
   socket.on("game:gameOver", (data: { roomId?: string; playerIndex?: number; reason?: string; winnerPlayerIndex?: number; loserPlayerIndex?: number }) => {
@@ -511,6 +588,13 @@ io.on("connection", (socket) => {
       winnerPlayerIndex: data?.winnerPlayerIndex,
       loserPlayerIndex: data?.loserPlayerIndex,
     });
+    const roomForLog = getRoomById(roomId);
+    const winnerIdx = data?.winnerPlayerIndex;
+    const loserIdx = data?.loserPlayerIndex;
+    const winnerName = winnerIdx === 0 ? roomForLog?.player1?.name : winnerIdx === 1 ? roomForLog?.player2?.name : null;
+    const loserName = loserIdx === 0 ? roomForLog?.player1?.name : loserIdx === 1 ? roomForLog?.player2?.name : null;
+    if (winnerName) gameLogWrite(`${winnerName} 이겼다`);
+    if (loserName) gameLogWrite(`${loserName} 졌다`);
   });
 
   socket.on("game:gameEndFinalize", (data: { roomId?: string }) => {
@@ -532,6 +616,7 @@ io.on("connection", (socket) => {
     }
     leaveRoom(roomId, 0);
     leaveRoom(roomId, 1);
+    console.log(`[Socket] ${socket.id} game:gameEndFinalize roomId=${roomId}`);
   });
 
   socket.on("game:mainTimeOver", (data: { roomId?: string; playerIndex?: number }) => {
@@ -541,6 +626,7 @@ io.on("connection", (socket) => {
     const info = socketGameRooms.get(socket.id);
     if (!info || info.roomId !== roomId || info.playerIndex !== playerIndex) return;
     io.to(roomId).emit("game:mainTimeOver", { roomId, playerIndex });
+    console.log(`[Socket] ${socket.id} game:mainTimeOver roomId=${roomId}`);
   });
 
   socket.on("game:roundDone", (data: { roomId?: string; playerIndex?: number }) => {
@@ -554,6 +640,7 @@ io.on("connection", (socket) => {
     const nextTurn: 0 | 1 = room.currentTurn === 0 ? 1 : 0;
     setCurrentTurn(roomId, nextTurn);
     io.to(roomId).emit("game:turnSwitch", { roomId, currentTurn: nextTurn });
+    console.log(`[Socket] ${socket.id} game:roundDone roomId=${roomId} nextTurn=${nextTurn}`);
   });
 
   socket.on("room:leave", (data: { roomId?: string; playerIndex?: number }) => {
@@ -566,6 +653,7 @@ io.on("connection", (socket) => {
     leaveRoom(roomId, playerIndex as 0 | 1);
     socket.leave(roomId);
     socketGameRooms.delete(socket.id);
+    console.log(`[Socket] ${socket.id} room:leave roomId=${roomId}`);
   });
 
   socket.on("disconnect", (reason) => {
@@ -587,8 +675,8 @@ io.on("connection", (socket) => {
 });
 
 httpServer.listen(PORT, "0.0.0.0", () => {
-  console.log(`서버: http://localhost:${PORT}`);
-  console.log(`Socket.IO: http://localhost:${PORT} (로그인 → 로비 → 게임)`);
+  console.log(`서버: http://168.107.50.13:${PORT}`);
+  console.log(`Socket.IO: http://168.107.50.13:${PORT} (Remember_game_server)`);
 });
 
 httpServer.on("error", (err: Error) => {
