@@ -1,14 +1,19 @@
-/* 로비 화면 */
+/* 로비 화면 - 반응형 */
 
 .lobby-wrap {
-  max-width: 420px;
+  width: 100%;
+  max-width: min(420px, calc(100vw - 2rem));
+  margin: 0 auto;
+  padding: 0 clamp(0.5rem, 2vw, 1rem);
+  box-sizing: border-box;
 }
 
 .lobby-user {
-  margin-bottom: 1.5rem;
-  padding: 1rem;
+  margin-bottom: clamp(1rem, 3vw, 1.5rem);
+  padding: clamp(0.75rem, 2.5vw, 1rem);
   background: rgba(255, 255, 255, 0.08);
   border-radius: 0.5rem;
+  font-size: clamp(0.85rem, 2.5vw, 0.95rem);
 }
 
 .lobby-user strong {
@@ -16,12 +21,12 @@
 }
 
 .lobby-section {
-  margin-bottom: 1.5rem;
+  margin-bottom: clamp(1rem, 3vw, 1.5rem);
 }
 
 .lobby-section-title {
   margin: 0 0 0.75rem;
-  font-size: 0.95rem;
+  font-size: clamp(0.9rem, 2.5vw, 0.95rem);
   font-weight: 600;
   color: rgba(255, 255, 255, 0.9);
 }
@@ -37,7 +42,7 @@
 
 .lobby-section-create .lobby-plate-row .lobby-label {
   margin-bottom: 0;
-  font-size: 0.95rem;
+  font-size: clamp(0.9rem, 2.5vw, 0.95rem);
   font-weight: 500;
   color: rgba(255, 255, 255, 0.9);
 }
@@ -45,18 +50,19 @@
 .lobby-label {
   display: block;
   margin-bottom: 0.35rem;
-  font-size: 0.9rem;
+  font-size: clamp(0.85rem, 2.5vw, 0.9rem);
   font-weight: 500;
   color: rgba(255, 255, 255, 0.85);
 }
 
 .lobby-select {
   display: block;
-  min-width: 5.5rem;
+  min-width: 5rem;
   width: auto;
+  max-width: 100%;
   min-height: 2.5rem;
-  padding: 0.5rem 2rem 0.5rem 0.75rem;
-  font-size: 1rem;
+  padding: 0.5rem 2rem 0.5rem clamp(0.5rem, 2vw, 0.75rem);
+  font-size: clamp(0.9rem, 2.5vw, 1rem);
   font-weight: 500;
   color: #fff;
   background-color: rgba(255, 255, 255, 0.08);
@@ -70,6 +76,7 @@
   appearance: none;
   -webkit-appearance: none;
   transition: border-color 0.2s, background-color 0.2s, box-shadow 0.2s;
+  box-sizing: border-box;
 }
 
 .lobby-select:hover {
@@ -98,14 +105,15 @@
 
 .lobby-btn {
   width: 100%;
-  padding: 0.875rem 1rem;
-  font-size: 1rem;
+  padding: clamp(0.7rem, 2.5vw, 0.875rem) clamp(0.75rem, 2vw, 1rem);
+  font-size: clamp(0.9rem, 2.5vw, 1rem);
   font-weight: 600;
   color: #fff;
   border: none;
   border-radius: 0.5rem;
   cursor: pointer;
   transition: opacity 0.2s;
+  box-sizing: border-box;
 }
 
 .lobby-btn.primary {
@@ -124,9 +132,9 @@
 .lobby-btn.join {
   flex-shrink: 0;
   width: auto;
-  min-width: 4.5rem;
-  padding: 0.4rem 0.6rem;
-  font-size: 0.85rem;
+  min-width: 4rem;
+  padding: clamp(0.35rem, 1.5vw, 0.4rem) clamp(0.5rem, 1.5vw, 0.6rem);
+  font-size: clamp(0.8rem, 2.2vw, 0.85rem);
   background: rgba(74, 158, 255, 0.25);
   color: #4a9eff;
   border: 1px solid rgba(74, 158, 255, 0.4);
@@ -147,14 +155,16 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 0.75rem;
-  padding: 0.75rem 1rem;
+  gap: clamp(0.5rem, 2vw, 0.75rem);
+  padding: clamp(0.6rem, 2vw, 0.75rem) clamp(0.75rem, 2vw, 1rem);
   background: rgba(255, 255, 255, 0.06);
   border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 0.5rem;
+  flex-wrap: wrap;
+  min-width: 0;
 }
 
-.room-item > div {
+.room-item>div {
   flex: 1;
   min-width: 0;
   display: flex;
@@ -163,36 +173,41 @@
 }
 
 .room-item-player {
-  font-size: 0.85rem;
+  font-size: clamp(0.8rem, 2.2vw, 0.85rem);
   color: rgba(255, 255, 255, 0.6);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .room-item-plates {
-  font-size: 0.8rem;
+  font-size: clamp(0.75rem, 2vw, 0.8rem);
   color: rgba(255, 255, 255, 0.45);
 }
 
 .lobby-hint {
   margin: 0.5rem 0 0;
-  font-size: 0.8rem;
+  font-size: clamp(0.75rem, 2vw, 0.8rem);
   color: rgba(255, 255, 255, 0.4);
 }
 
 .lobby-actions {
   display: flex;
   flex-direction: column;
-  gap: 0.75rem;
-  margin-top: 1rem;
+  gap: clamp(0.5rem, 2vw, 0.75rem);
+  margin-top: clamp(0.75rem, 2vw, 1rem);
 }
 
 .lobby-actions a {
   display: block;
   text-align: center;
-  padding: 0.75rem;
+  padding: clamp(0.6rem, 2vw, 0.75rem);
   color: #4a9eff;
   text-decoration: none;
   border: 1px solid rgba(74, 158, 255, 0.4);
   border-radius: 0.5rem;
+  font-size: clamp(0.9rem, 2.5vw, 1rem);
+  box-sizing: border-box;
 }
 
 .lobby-actions a:hover {
@@ -204,10 +219,10 @@
   color: rgba(255, 255, 255, 0.6);
   border: 1px solid rgba(255, 255, 255, 0.2);
   cursor: pointer;
-  padding: 0.5rem 1rem;
+  padding: clamp(0.4rem, 1.5vw, 0.5rem) clamp(0.75rem, 2vw, 1rem);
   border-radius: 0.5rem;
-  font-size: 0.9rem;
-  margin-top: 1rem;
+  font-size: clamp(0.85rem, 2.2vw, 0.9rem);
+  margin-top: clamp(0.75rem, 2vw, 1rem);
 }
 
 .logout-btn:hover {
