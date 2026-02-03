@@ -10,6 +10,10 @@
     "start": "node dist/index.js",
     "server": "node dist-server/server.js",
     "dev": "nodemon",
+    "dev:vite": "vite",
+    "build:vite": "vite build",
+    "preview": "vite preview",
+    "deploy": "vite build && gh-pages -d dist",
     "pm2:start": "pm2 start ecosystem.config.cjs",
     "pm2:stop": "pm2 stop remember_game2",
     "pm2:restart": "pm2 restart remember_game2",
@@ -26,8 +30,10 @@
   },
   "devDependencies": {
     "@types/express": "^4.17.21",
-    "@types/node": "^22.10.1",
+    "@types/node": "^22.19.8",
+    "gh-pages": "^6.3.0",
     "nodemon": "^3.1.9",
-    "typescript": "^5.6.3"
+    "typescript": "^5.6.3",
+    "vite": "^7.3.1"
   }
 }
