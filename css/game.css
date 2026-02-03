@@ -2,7 +2,8 @@
 
 .game-wrap {
   width: 100%;
-  max-width: min(480px, calc(100vw - 2rem));
+  /* 접시 링이 커질 수 있도록 560px까지 허용 (큰 화면에서 간격 확대) */
+  max-width: min(560px, calc(100vw - 2rem));
   margin: 0 auto;
   padding: 0 clamp(0.5rem, 2vw, 1rem);
   box-sizing: border-box;
@@ -175,6 +176,25 @@
   box-sizing: border-box;
 }
 
+/* 접시 링 컨테이너: ring이 있을 때 링 + 아래 영역을 세로 배치, 링은 정사각형 유지 */
+#gameAreaContent:has(.game-plate-ring) {
+  position: relative;
+  width: 100%;
+  /* 큰 화면: 560px까지 성장. 작은 화면: 100% (부모가 이미 좁음). 너무 좁아지지 않게 최소 260px */
+  max-width: min(560px, calc(100vw - 2rem));
+  min-width: min(260px, 100%);
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  min-height: 0;
+  /* 링과 아래 메인 콘텐츠 사이 간격 */
+  gap: clamp(1rem, 4vw, 1.75rem);
+  container-type: inline-size;
+  container-name: plate-ring;
+}
+
 /* game-area 왼쪽/오른쪽 위: 토큰 x N개 (N = n(n-1)/2), 레디 후에만 표시 */
 .game-area-token-label {
   display: none;
@@ -248,19 +268,18 @@
   cursor: not-allowed;
 }
 
-/* 접시 원형 배치: 10~20개, 2단위 (PLATE_COUNT). 휴대폰에서도 화면 안에 맞춤 */
+/* 접시 링: 반응형. plate-radius는 화면이 좁아질수록 비율을 키워서 접시가 더 바깥으로 늘어남 */
 .game-plate-ring {
-  --plate-ring-size: min(400px, calc(100vmin - 2rem));
-  --plate-radius: calc(var(--plate-ring-size) * 160 / 400);
-  --plate-size: calc(var(--plate-ring-size) * 45 / 400);
-  /** 뚜껑은 접시 바깥쪽에 배치 (접시 반경 + 접시 크기만큼 밖으로) */
-  --lid-radius: calc(var(--plate-radius) + var(--plate-size));
   position: relative;
-  width: var(--plate-ring-size);
-  height: var(--plate-ring-size);
-  max-width: calc(100vw - 2rem);
-  max-height: calc(100vmin - 2rem);
-  margin: 0 auto;
+  width: 100%;
+  aspect-ratio: 1;
+  max-width: 100%;
+  flex-shrink: 0;
+  min-height: 0;
+  --plate-ring-size: 100%;
+  --plate-radius: 400%;
+  --plate-size: 11.25%;
+  --lid-radius: calc(var(--plate-radius) + var(--plate-size));
 }
 
 /* 뚜껑: 기본 숨김, 클릭 시 .game-plate-lid--covered 추가하면 보이면서 덮히는 애니메이션 */
@@ -342,15 +361,14 @@
 
 /* 접시 번호: 12시 방향부터 시계방향 1, 2, … (노란 글자, 접시 바깥쪽에 배치) */
 .game-plate-number {
-  font-size: clamp(0.6rem, calc(var(--plate-size) * 0.35), 0.8rem);
+  font-size: clamp(0.5rem, 3vw, 0.8rem);
   font-weight: 700;
   color: #e6c200;
   text-shadow: 0 0 2px rgba(0, 0, 0, 0.8), 0 1px 2px rgba(0, 0, 0, 0.6);
   line-height: 1;
   pointer-events: none;
   user-select: none;
-  /* 접시 중심에서 바깥(원 밖)으로 밀어서 배치 (뚜껑과 겹쳐도 됨) */
-  transform: translateY(calc(var(--plate-size) / 2 + 8px));
+  transform: translateY(calc(var(--plate-size) / 2 + 2%));
 }
 
 /* 접시 위 토큰: 갯수만큼 작은 원, 확장성 위해 --plate-size 기준. 뚜껑이 덮이면 z-index로 가려짐 */
@@ -373,8 +391,8 @@
   --token-size: calc(var(--plate-size) * 0.18);
   width: var(--token-size);
   height: var(--token-size);
-  min-width: 4px;
-  min-height: 4px;
+  min-width: 2px;
+  min-height: 2px;
   border-radius: 50%;
   flex-shrink: 0;
 }
@@ -462,7 +480,7 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 0.5rem;
+  gap: clamp(0.6rem, 2.5vw, 1rem);
   min-width: 80px;
   max-width: min(200px, 85vw);
   text-align: center;
@@ -483,7 +501,7 @@
   min-height: 2.5rem;
   width: 100%;
   max-width: 200px;
-  padding: 0.5rem 0.75rem;
+  padding: clamp(0.5rem, 2vw, 0.75rem) clamp(0.75rem, 2.5vw, 1rem);
   font-size: clamp(0.8rem, 2.5vw, 0.95rem);
   color: #e6c200;
   text-align: center;
@@ -502,6 +520,8 @@
 .game-main-content {
   min-height: clamp(60px, 20vw, 80px);
   width: 100%;
+  padding: clamp(0.25rem, 1.5vw, 0.5rem) 0;
+  box-sizing: border-box;
 }
 
 .game-wrap .lobby-actions {
