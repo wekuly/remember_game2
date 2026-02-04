@@ -7,7 +7,7 @@
       "ES2022"
     ],
     "outDir": "dist-server",
-    "rootDir": "",
+    "rootDir": "server",
     "strict": true,
     "esModuleInterop": true,
     "skipLibCheck": true,
