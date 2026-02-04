@@ -285,6 +285,9 @@ const PUBLIC_URL =
   "https://remembergame2-production.up.railway.app";
 
 const app = express();
+// 'cors' 미정의 에러가 발생하므로, 미리 import되어 있는 
+// CORS 미들웨어 핸들러만 사용하도록 삭제합니다. 
+// 이 줄 전체를 제거하고 아래의 커스텀 CORS 처리(app.use...)만 사용합니다.
 const httpServer = http.createServer(app);
 const io = new Server(httpServer, {
   cors: {
@@ -333,6 +336,7 @@ app.get("/health", (_req, res) => {
 
 /** 클라이언트 소켓 초기 설정용: 연결할 Socket.IO 서버 주소 반환 */
 app.get("/api/config", (_req, res) => {
+  console.log("PUBLIC_URL", PUBLIC_URL);
   res.json({ ok: true, socketUrl: PUBLIC_URL });
 });
 
