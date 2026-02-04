@@ -280,7 +280,12 @@ const PORT = Number(process.env.PORT) || 3000;
 
 const app = express();
 const httpServer = http.createServer(app);
-const io = new Server(httpServer, { cors: { origin: "*" } });
+const io = new Server(httpServer, {
+  cors: {
+    origin: "https://wekuly.github.io/remember_game2",
+    methods: ["GET", "POST"]
+  }
+});
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
