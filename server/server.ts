@@ -276,7 +276,7 @@ function leaveQueue(socketId: string): void {
 // ----- 서버 설정 -----
 const socketGameRooms = new Map<string, { roomId: string; playerIndex: number }>();
 const projectRoot = process.cwd();
-const PORT = Number(process.env.PORT) || 3000;
+const PORT = Number(process.env.PORT) || 8080;
 
 /** 클라이언트가 소켓 연결할 공개 주소 (Railway 앱 주소). 환경 변수 없으면 Railway URL 사용 */
 const PUBLIC_URL = "https://remembergame2-production-2e29.up.railway.app";
