@@ -13,13 +13,24 @@ function getIo(): (url: string, opts?: { path?: string; transports?: string[] })
 
 interface SocketLike {
   emit(event: string, ...args: unknown[]): void;
-  on(event: string, fn: (data: unknown) => void): void;
+  on(event: string, fn: (data?: unknown) => void): void;
   off(event: string, fn?: (data: unknown) => void): void;
+}
+
+/** 접속하자마자 Socket.IO 연결. 한 번만 생성하고, connect 시 저장된 닉네임으로 로그인 전송 */
+function ensureSocketConnected(): void {
+  if (gameSocket) return;
+  gameSocket = getIo()(API_BASE, { path: "/socket.io", transports: ["websocket", "polling"] });
+  gameSocket.on("connect", () => {
+    const name = getStoredUser()?.name ?? "";
+    gameSocket?.emit("login", { name: name || undefined });
+  });
 }
 
 /** API·Socket 연결 서버. 무조건 아래 주소 사용 (배포 서버) */
 // 로컬/동일 출처 사용 시: const API_BASE = window.location.origin;
-const API_BASE = "http://168.107.50.13:3000";
+// const API_BASE = "http://168.107.50.13:3000";
+const API_BASE = "https://remembergame2-production.up.railway.app";
 const STORAGE_KEY_USER = "remember_game2_user";
 const STORAGE_KEY_ROOM = "remember_game2_room";
 const ROOM_LIST_INTERVAL_MS = 3000;
@@ -240,6 +251,8 @@ function renderLogin(): void {
 
     loginBtn.disabled = true;
     saveUser(name);
+    ensureSocketConnected();
+    gameSocket?.emit("login", { name });
     renderLobby();
   });
 }
@@ -1398,6 +1411,9 @@ function renderGame(): void {
 
 // ---------- 진입점 ----------
 function init(): void {
+  /** 접속하자마자 Socket.IO 연결 → 서버에서 [접속] / [로그인] 로그 */
+  ensureSocketConnected();
+
   /** 새로 고침 시 방 정보만 제거 (로비부터 다시). 로그인은 유지(자동 로그인) */
   clearRoomState();
 

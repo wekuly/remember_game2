@@ -329,11 +329,12 @@ app.post("/api/rooms", (req, res) => {
   const body = req.body as { plateCount?: number; creatorName?: string };
   const plateCount = body?.plateCount;
   const creatorName = typeof body?.creatorName === "string" ? body.creatorName.trim() : "";
+  const addr = req.socket?.remoteAddress ?? req.ip ?? "?";
   const { roomId, code, room } = createRoom(plateCount);
   if (creatorName) {
-    gameLogWrite(`${creatorName} 방 만들었다 (code=${code})`);
+    gameLogWrite(`${creatorName} 이 방을 만들었다 (방 id=${room.id})`);
   } else {
-    gameLogWrite(`방 생성 (code=${code})`);
+    gameLogWrite(`방 생성 (방 id=${room.id})`);
   }
   res.status(201).json({
     ok: true,
@@ -374,20 +375,39 @@ app.get("/api/rooms/by-code/:code", (req, res) => {
 
 app.post("/api/rooms/join", (req, res) => {
   const { code, playerName } = (req.body as { code?: string; playerName?: string }) ?? {};
+  const name = typeof playerName === "string" ? playerName.trim() : "";
+  const addr = req.socket?.remoteAddress ?? req.ip ?? "?";
+  console.log(`[접속] ${name || "누군가"} 들어왔습니다 (addr=${addr}, 코드로 입장 시도)`);
   const result = joinRoomByCode(code ?? "", playerName ?? "");
   if (!result.ok) {
     return res.status(400).json({ ok: false, error: result.error });
   }
-  const name = (playerName ?? "").trim() || "플레이어";
+  const displayName = name || "플레이어";
   const nth = result.playerIndex === 0 ? "1번" : "2번";
   const codeStr = result.room?.code ?? code ?? "";
-  gameLogWrite(`${name} 방 들어갔다 (${nth}, code=${codeStr})`);
+  gameLogWrite(`${displayName} 방 들어갔다 (${nth}, code=${codeStr})`);
   res.json({
     ok: true,
     roomId: result.room?.id,
     playerIndex: result.playerIndex,
     room: result.room,
   });
+});
+
+app.post("/api/rooms/:roomId/join", (req, res) => {
+  const roomId = req.params.roomId ?? "";
+  const playerName = (req.body as { playerName?: string })?.playerName;
+  const name = typeof playerName === "string" ? String(playerName).trim() : "";
+  const addr = req.socket?.remoteAddress ?? req.ip ?? "?";
+  const result = joinRoom(roomId, playerName ?? "");
+  if (!result.ok) {
+    return res.status(400).json({ ok: false, error: result.error });
+  }
+  const displayName = name || "플레이어";
+  const room = getRoomById(roomId);
+  const code = room?.code ?? roomId;
+  const nth = result.playerIndex === 0 ? "1번" : "2번";
+  res.json({ ok: true, playerIndex: result.playerIndex, room: result.room });
 });
 
 app.get("/api/rooms/:roomId", (req, res) => {
@@ -408,21 +428,6 @@ app.get("/api/rooms/:roomId", (req, res) => {
       createdAt: room.createdAt,
     },
   });
-});
-
-app.post("/api/rooms/:roomId/join", (req, res) => {
-  const roomId = req.params.roomId ?? "";
-  const playerName = (req.body as { playerName?: string })?.playerName;
-  const result = joinRoom(roomId, playerName ?? "");
-  if (!result.ok) {
-    return res.status(400).json({ ok: false, error: result.error });
-  }
-  const name = (playerName ?? "").trim() || "플레이어";
-  const room = getRoomById(roomId);
-  const code = room?.code ?? roomId;
-  const nth = result.playerIndex === 0 ? "1번" : "2번";
-  gameLogWrite(`${name} 방 들어갔다 (${nth}, code=${code})`);
-  res.json({ ok: true, playerIndex: result.playerIndex, room: result.room });
 });
 
 app.post("/api/rooms/:roomId/leave", (req, res) => {
@@ -473,14 +478,14 @@ app.get("/api/games/log", (req, res) => {
 
 // ----- Socket.IO -----
 io.on("connection", (socket) => {
-  console.log(`[연결] ${getSocketLabel(socket.id)} (${socket.handshake.address})`);
-
+  const addr = socket.handshake.address ?? "?";
   socket.on("login", (data: { name?: string }) => {
     const name = data && typeof data.name === "string" ? data.name.trim() : "";
     const user = guestLogin(socket.id, name || undefined);
     socket.emit("login", { ok: true, user });
     setSocketNickname(socket.id, user.name);
-    console.log(`[로그인] ${getSocketLabel(socket.id)}`);
+    const label = getSocketLabel(socket.id);
+    console.log(`[로그인] ${label} (socketId=${socket.id})`);
   });
 
   socket.on("lobby:join", () => {
@@ -512,7 +517,7 @@ io.on("connection", (socket) => {
     }
     socket.join(roomId);
     socketGameRooms.set(socket.id, { roomId, playerIndex });
-    console.log(`[Socket] ${getSocketLabel(socket.id)} game:joinRoom roomId=${roomId} playerIndex=${playerIndex}`);
+    console.log(`[Socket] ${getSocketLabel(socket.id)} game:joinRoom`);
   });
 
   socket.on("game:start", (data: { roomId?: string }) => {
@@ -699,8 +704,10 @@ io.on("connection", (socket) => {
 });
 
 httpServer.listen(PORT, "0.0.0.0", () => {
-  console.log(`서버: http://168.107.50.13:${PORT}`);
-  console.log(`Socket.IO: http://168.107.50.13:${PORT} (Remember_game_server)`);
+  console.log(`서버: https://remembergame2-production.up.railway.app`);
+  console.log(`Socket.IO: https://remembergame2-production.up.railway.app (Remember_game_server)`);
+  // console.log(`서버: //168.107.50.13:${PORT}`);
+  // console.log(`Socket.IO: //168.107.50.13:${PORT} (Remember_game_server)`);
 });
 
 httpServer.on("error", (err: Error) => {

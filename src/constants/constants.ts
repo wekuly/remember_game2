@@ -16,5 +16,6 @@ export const LOBBY = {
 
 export const API = {
   /** 게임·API·Socket 연결 대상 서버 (배포: 168.107.50.13:3000, 로컬: http://localhost:3000) */
-  SERVER_URL: "http://168.107.50.13:3000",
+  // SERVER_URL: "http://168.107.50.13:3000",
+  SERVER_URL: "https://remembergame2-production.up.railway.app",
 } as const;
