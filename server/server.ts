@@ -288,7 +288,7 @@ const app = express();
 const httpServer = http.createServer(app);
 const io = new Server(httpServer, {
   cors: {
-    origin: "https://wekuly.github.io/remember_game2",
+    origin: "*",
     methods: ["GET", "POST"]
   }
 });
