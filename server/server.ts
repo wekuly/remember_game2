@@ -279,10 +279,7 @@ const projectRoot = process.cwd();
 const PORT = Number(process.env.PORT) || 3000;
 
 /** 클라이언트가 소켓 연결할 공개 주소 (Railway 앱 주소). 환경 변수 없으면 Railway URL 사용 */
-const PUBLIC_URL =
-  process.env.PUBLIC_URL ||
-  process.env.RAILWAY_STATIC_URL ||
-  "https://remembergame2-production.up.railway.app";
+const PUBLIC_URL = "https://remembergame2-production.up.railway.app";
 
 const app = express();
 // 'cors' 미정의 에러가 발생하므로, 미리 import되어 있는 
@@ -295,6 +292,13 @@ const io = new Server(httpServer, {
     methods: ["GET", "POST"]
   }
 });
+
+/** 클라이언트 소켓 초기 설정용: 연결할 Socket.IO 서버 주소 반환 */
+app.get("/api/config", (_req, res) => {
+  console.log("PUBLIC_URL", PUBLIC_URL);
+  res.json({ ok: true, socketUrl: PUBLIC_URL });
+});
+
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
@@ -333,13 +337,6 @@ if (fs.existsSync(clientDir)) {
 app.get("/health", (_req, res) => {
   res.json({ ok: true, message: "서버 정상" });
 });
-
-/** 클라이언트 소켓 초기 설정용: 연결할 Socket.IO 서버 주소 반환 */
-app.get("/api/config", (_req, res) => {
-  console.log("PUBLIC_URL", PUBLIC_URL);
-  res.json({ ok: true, socketUrl: PUBLIC_URL });
-});
-
 // ----- 인라인: /api/rooms -----
 app.get("/api/rooms", (_req, res) => {
   res.json({ ok: true, rooms: getJoinableRooms() });
