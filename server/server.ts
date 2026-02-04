@@ -279,7 +279,7 @@ const projectRoot = process.cwd();
 const PORT = Number(process.env.PORT) || 3000;
 
 /** 클라이언트가 소켓 연결할 공개 주소 (Railway 앱 주소). 환경 변수 없으면 Railway URL 사용 */
-const PUBLIC_URL = "https://remembergame2-production.up.railway.app";
+const PUBLIC_URL = "https://remembergame2-production-2e29.up.railway.app";
 
 const app = express();
 // 'cors' 미정의 에러가 발생하므로, 미리 import되어 있는 

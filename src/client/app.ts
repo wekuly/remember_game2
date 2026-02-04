@@ -31,12 +31,12 @@ async function getApiBase(): Promise<string> {
   } catch {
     // 다른 출처에서 열었을 때 등 fallback
   }
-  apiBaseCache = "https://remembergame2-production.up.railway.app";
+  apiBaseCache = "https://remembergame2-production-2e29.up.railway.app";
   return apiBaseCache;
 }
 
 /** API·Socket 연결 서버. server.ts /api/config에서 가져온 주소 사용 (최초 1회 fetch) */
-let API_BASE = "https://remembergame2-production.up.railway.app";
+let API_BASE = "https://remembergame2-production-2e29.up.railway.app";
 
 /** 접속하자마자 Socket.IO 연결. server.ts 설정(socketUrl) 사용, connect 시 저장된 닉네임으로 로그인 전송 */
 async function ensureSocketConnected(): Promise<void> {
