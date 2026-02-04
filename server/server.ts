@@ -278,6 +278,12 @@ const socketGameRooms = new Map<string, { roomId: string; playerIndex: number }>
 const projectRoot = process.cwd();
 const PORT = Number(process.env.PORT) || 3000;
 
+/** 클라이언트가 소켓 연결할 공개 주소 (Railway 앱 주소). 환경 변수 없으면 Railway URL 사용 */
+const PUBLIC_URL =
+  process.env.PUBLIC_URL ||
+  process.env.RAILWAY_STATIC_URL ||
+  "https://remembergame2-production.up.railway.app";
+
 const app = express();
 const httpServer = http.createServer(app);
 const io = new Server(httpServer, {
@@ -323,6 +329,11 @@ if (fs.existsSync(clientDir)) {
 
 app.get("/health", (_req, res) => {
   res.json({ ok: true, message: "서버 정상" });
+});
+
+/** 클라이언트 소켓 초기 설정용: 연결할 Socket.IO 서버 주소 반환 */
+app.get("/api/config", (_req, res) => {
+  res.json({ ok: true, socketUrl: PUBLIC_URL });
 });
 
 // ----- 인라인: /api/rooms -----
@@ -709,10 +720,8 @@ io.on("connection", (socket) => {
 });
 
 httpServer.listen(PORT, "0.0.0.0", () => {
-  console.log(`서버: https://remembergame2-production.up.railway.app`);
-  console.log(`Socket.IO: https://remembergame2-production.up.railway.app (Remember_game_server)`);
-  // console.log(`서버: //168.107.50.13:${PORT}`);
-  // console.log(`Socket.IO: //168.107.50.13:${PORT} (Remember_game_server)`);
+  console.log(`서버: ${PUBLIC_URL}`);
+  console.log(`Socket.IO: ${PUBLIC_URL} (Remember_game_server)`);
 });
 
 httpServer.on("error", (err: Error) => {

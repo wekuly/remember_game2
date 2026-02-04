@@ -17,20 +17,37 @@ interface SocketLike {
   off(event: string, fn?: (data: unknown) => void): void;
 }
 
-/** 접속하자마자 Socket.IO 연결. 한 번만 생성하고, connect 시 저장된 닉네임으로 로그인 전송 */
-function ensureSocketConnected(): void {
+/** 서버에서 소켓 URL 가져오기 (server.ts /api/config). 한 번만 fetch 후 캐시 */
+let apiBaseCache: string | null = null;
+async function getApiBase(): Promise<string> {
+  if (apiBaseCache) return apiBaseCache;
+  try {
+    const r = await fetch(`${window.location.origin}/api/config`);
+    const d = (await r.json()) as { ok?: boolean; socketUrl?: string };
+    if (d.ok && typeof d.socketUrl === "string" && d.socketUrl) {
+      apiBaseCache = d.socketUrl;
+      return apiBaseCache;
+    }
+  } catch {
+    // 다른 출처에서 열었을 때 등 fallback
+  }
+  apiBaseCache = "https://remembergame2-production.up.railway.app";
+  return apiBaseCache;
+}
+
+/** API·Socket 연결 서버. server.ts /api/config에서 가져온 주소 사용 (최초 1회 fetch) */
+let API_BASE = "https://remembergame2-production.up.railway.app";
+
+/** 접속하자마자 Socket.IO 연결. server.ts 설정(socketUrl) 사용, connect 시 저장된 닉네임으로 로그인 전송 */
+async function ensureSocketConnected(): Promise<void> {
   if (gameSocket) return;
+  API_BASE = await getApiBase();
   gameSocket = getIo()(API_BASE, { path: "/socket.io", transports: ["websocket", "polling"] });
   gameSocket.on("connect", () => {
     const name = getStoredUser()?.name ?? "";
     gameSocket?.emit("login", { name: name || undefined });
   });
 }
-
-/** API·Socket 연결 서버. 무조건 아래 주소 사용 (배포 서버) */
-// 로컬/동일 출처 사용 시: const API_BASE = window.location.origin;
-// const API_BASE = "http://168.107.50.13:3000";
-const API_BASE = "https://remembergame2-production.up.railway.app";
 const STORAGE_KEY_USER = "remember_game2_user";
 const STORAGE_KEY_ROOM = "remember_game2_room";
 const ROOM_LIST_INTERVAL_MS = 3000;
@@ -231,7 +248,7 @@ function renderLogin(): void {
   const nicknameError = document.getElementById("nicknameError") as HTMLElement;
   const loginBtn = document.getElementById("loginBtn") as HTMLButtonElement;
 
-  form.addEventListener("submit", (e) => {
+  form.addEventListener("submit", async (e) => {
     e.preventDefault();
     nicknameError.textContent = "";
     nicknameInput.classList.remove("invalid");
@@ -251,7 +268,7 @@ function renderLogin(): void {
 
     loginBtn.disabled = true;
     saveUser(name);
-    ensureSocketConnected();
+    await ensureSocketConnected();
     gameSocket?.emit("login", { name });
     renderLobby();
   });
@@ -1410,9 +1427,9 @@ function renderGame(): void {
 }
 
 // ---------- 진입점 ----------
-function init(): void {
-  /** 접속하자마자 Socket.IO 연결 → 서버에서 [접속] / [로그인] 로그 */
-  ensureSocketConnected();
+async function init(): Promise<void> {
+  /** 접속하자마자 Socket.IO 연결 (server.ts /api/config에서 주소 로드) → 서버에서 [접속] / [로그인] 로그 */
+  await ensureSocketConnected();
 
   /** 새로 고침 시 방 정보만 제거 (로비부터 다시). 로그인은 유지(자동 로그인) */
   clearRoomState();
@@ -1430,6 +1447,6 @@ function init(): void {
   renderLobby();
 }
 
-init();
+init().catch((err) => console.error("[init]", err));
 
 export { };
